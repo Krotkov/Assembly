@@ -120,24 +120,24 @@ _print:
         je loop6
         cmp cl, '-'
         jne n9
-        mov dh, 1
+        or dl, 1
         jmp loop6
         n9:
         cmp cl, '0'
         jne n10
-        cmp ch, 1
-        je n11
         cmp eax, 0
         jne n11
-        cmp dh, 1
-        je loop6
-        mov dh, 2
-        mov ch, 1
+        or dl, 2
         jmp loop6
         n10:
         cmp cl, '+'
+        jne n111
+        or dl, 8
+        jmp loop6
+        n111:
+        cmp cl, ' '
         jne n11
-        mov dl, 1
+        or dl, 4
         jmp loop6
         n11:
         push ecx
@@ -153,35 +153,58 @@ _print:
         pop ecx
         jmp loop6
     endloop6:
- 
+    
     sub edi, 4
  
     mov ebx, [esi+20]
-    mov esi, 0
+    xor esi, esi
     mov ecx, edi
     sub ecx, esp
     shr ecx, 2
     push ebx
     mov ebx, [edi]
-    cmp dl, 1
-    jne n13
-    inc ecx
-    mov esi, 1
-    mov dl, '-'
-    cmp ebx, 0
-    jne n18
-    mov dl, '+'
-    n18:
-    jmp n19
- 
-    n13:
-    cmp ebx, 1
-    jne n19
-    inc ecx
-    mov esi, 1
-    mov dl, '-'
- 
-    n19:
+
+    dec esp
+    mov [esp], dl
+    and dl, 4
+    jz n100
+        mov esi, 1
+        inc ecx
+        mov dh, ' '
+        mov dl, [esp]
+        and dl, 8
+        jz n102
+        mov dh, '-'
+        cmp ebx, 0
+        jne n101
+        mov dh, '+'
+        jmp n101
+        n102:
+        cmp ebx, 0
+        je n101
+        mov dh, '-'
+        jmp n101
+    n100:
+        mov dl, [esp]
+        and dl, 8
+        jz n103
+        inc ecx
+        mov esi, 1
+        mov dh, '-'
+        cmp ebx, 0
+        jne n101
+        mov dh, '+'
+        jmp n101
+        n103:
+        cmp ebx, 1
+        jne n101
+        inc ecx
+        mov esi, 1
+        mov dh, '-'
+    n101:
+    mov dl, [esp]
+    inc esp
+
     pop ebx
     cmp eax, ecx
     ja n14
@@ -200,23 +223,24 @@ _print:
     sub ecx, esp
     shr ecx, 2
     add ecx, esi
- 
-    cmp dh, 0
-    jne n15
+    
+
+    and dl, 3
+    jnz n15
         push eax
         sub eax, ecx
         add ebx, eax
         pop eax
         call printSign
         call printNum
+        jmp n16
     n15:
-    cmp dh, 1
-    jne n17
+    and dl, 1
+    jz n17
         call printSign
         call printNum
+        jmp n16
     n17:
-    cmp dh, 2
-    jne n16
         call printSign
         mov ecx, edi
         sub ecx, esp
@@ -326,14 +350,25 @@ dop2:
  
 ;Вычисляет число, по 16-ричному символу в ch и добавляет его в dh со сдвигом
 symbolFromCH:
+    cmp ch, '0'
+    jc n200
     cmp ch, '9'
-    ja n1
+    ja n200
     sub ch, '0'
-    jmp n2
-    n1:
+    jmp end_symbol_from_char
+    n200:  
+    cmp ch, 'a'
+    jc n201
+    cmp ch, 'z'
+    ja n201
+    sub ch, 'a'
+    add ch, 10
+    jmp end_symbol_from_char
+    n201:
     sub ch, 'A'
     add ch, 10
-    n2:
+    end_symbol_from_char:
+    
     shl dh, 4
     add dh, ch
     ret
@@ -371,11 +406,11 @@ printNum:
     pop eax
     ret
  
-;Выводи знак из dl в ebx и делает ebx++, если esi = 1
+;Выводи знак из dh в ebx и делает ebx++, если esi = 1
 printSign:
     cmp esi, 1
     jne n20
-    mov [ebx], dl
+    mov [ebx], dh
     inc bx
     n20:
     ret
