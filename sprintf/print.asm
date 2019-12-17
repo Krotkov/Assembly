@@ -7,28 +7,37 @@ _print:
     push ebp
     push edi
     push esi
- 
- 
+    
+    mov eax, [esp+28]
+    xor edx, edx
+
+    loop20:
+        mov ch, [eax + edx]
+        inc edx
+        cmp ch, 0
+        jne loop20
+    dec edx
     mov eax, [esp+28]
     mov esi, esp
  
-    mov ebx, 32
- 
+    mov ebx, edx
     ;Читаю знак и сохраняю его в cl
-   
+
     xor ecx, ecx
     xor edx, edx    
- 
+    mov edi, 32
     mov dl, [eax]
     cmp dl, '-'
     jne loop1
     mov cl, 1
     inc eax
+    dec ebx
     ;Записываю двоичную версию числа на стек
- 
     loop1:
         xor edx, edx
         ;Читаем первый символ worda
+        cmp ebx, 2
+        jnae n30
         mov ch, [eax + ebx - 2]
         call symbolFromCH
         ;Читаем второй символ worda
@@ -37,8 +46,30 @@ _print:
         sub esp, 1
         mov [esp], dh
         sub ebx, 2
+        sub edi, 2
         jnz loop1
- 
+    jmp n31
+
+    n30:
+    cmp ebx, 0
+    je loop21
+    mov ch, [eax]
+    call symbolFromCH
+    sub esp, 1
+    mov [esp], ch
+    sub ebx, 1
+    sub edi, 2
+    loop21:
+        cmp edi, 0
+        je n31
+        sub esp, 1
+        mov ch, 0
+        mov [esp], ch
+        sub edi, 2
+        jmp loop21
+
+
+    n31: 
     cmp cl, 1
     jne n7
     call dop2
@@ -76,7 +107,6 @@ _print:
     xor ebx, ebx
     xor ecx, ecx
     xor edx, edx
- 
  
     mov ebx, [esi+24]
     loop6:
@@ -282,9 +312,9 @@ dop2:
         bswap eax
         mov [esp + ebx*4+20], eax
         jnc n6
-        dec ecx
+        mov ecx, 1
         n6:
-        dec ecx      ;ecx = 0 or 1
+        mov ecx, 0      ;ecx = 0 or 1
         cmp ebx, 0
         jne loop5
  
