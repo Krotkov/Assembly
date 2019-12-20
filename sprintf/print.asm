@@ -333,12 +333,14 @@ dop2:
         bswap eax
         not eax
         add eax, ecx
-        bswap eax
-        mov [esp + ebx*4+20], eax
         jnc n6
         mov ecx, 1
+        jmp n40
         n6:
         mov ecx, 0      ;ecx = 0 or 1
+        n40:
+        bswap eax
+        mov [esp + ebx*4+20], eax
         cmp ebx, 0
         jne loop5
  
