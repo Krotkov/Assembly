@@ -1,6 +1,7 @@
 section .text
 
 global fdct
+global idct
 
 fdct:
 	sub rsp, 8
@@ -541,10 +542,10 @@ fdct16:
 	movaps xmm2, xmm6
 	movaps xmm3, xmm7
 
-	divps xmm0, [divmatrix]
-	divps xmm1, [divmatrix]
-	divps xmm2, [divmatrix]
-	divps xmm3, [divmatrix]
+	divps xmm0, [fmatrix]
+	divps xmm1, [fmatrix]
+	divps xmm2, [fmatrix]
+	divps xmm3, [fmatrix]
 
 	ret
 
@@ -749,6 +750,707 @@ fdct4_4:
 	shufps xmm0, xmm0, 11011000b
 	jmp fdct4_4_end
 
+
+
+
+
+
+
+
+
+
+idct:
+	sub rsp, 8
+
+	push rbx
+	push rbp
+	push rsi
+	push rdi
+	push r12
+	push r13
+	push r14
+	push r15
+
+	sub rsp, 16*10
+	movaps [rsp + 16*0], xmm6
+	movaps [rsp + 16*1], xmm7
+	movaps [rsp + 16*2], xmm8
+	movaps [rsp + 16*3], xmm9
+	movaps [rsp + 16*4], xmm10
+	movaps [rsp + 16*5], xmm11
+	movaps [rsp + 16*6], xmm12
+	movaps [rsp + 16*7], xmm13
+	movaps [rsp + 16*8], xmm14
+	movaps [rsp + 16*9], xmm15
+	;---------------------------------------------------------------------------------------------------------------------------------	
+
+	xor rax, rax
+	loop_column1:
+		movaps xmm10,   [rdi + rax + 16*4*0]
+		movaps xmm11,   [rdi + rax + 16*4*1]
+		movaps xmm12,   [rdi + rax + 16*4*2]
+		movaps xmm13,   [rdi + rax + 16*4*3]
+		movaps xmm14,   [rdi + rax + 16*4*4]
+		movaps xmm15,   [rdi + rax + 16*4*5]
+		mov   r10,  [rdi + rax + 16*4*6]
+		mov   r11,  [rdi + rax + 16*4*7]
+		mov   r12,  [rdi + rax + 16*4*8]
+		mov   r13,  [rdi + rax + 16*4*9]
+		mov   r14,  [rdi + rax + 16*4*10]
+		mov   r15,  [rdi + rax + 16*4*11]
+		mov   rdx,  [rdi + rax + 16*4*12]
+		mov   rbp,  [rdi + rax + 16*4*13]
+		mov   rbx,  [rdi + rax + 16*4*14]
+		mov   rcx,  [rdi + rax + 16*4*15]
+
+		insertps	xmm0, xmm10, 00000000b
+		insertps	xmm0, xmm11, 00010000b
+		insertps	xmm0, xmm12, 00100000b
+		insertps	xmm0, xmm13, 00110000b
+
+		insertps    xmm1, xmm14, 00000000b
+		insertps    xmm1, xmm15, 00010000b
+		pinsrd		xmm1, r10d, 00000010b
+		pinsrd		xmm1, r11d, 00000011b
+
+		pinsrd		xmm2, r12d, 00000000b
+		pinsrd		xmm2, r13d, 00000001b
+		pinsrd		xmm2, r14d, 00000010b
+		pinsrd		xmm2, r15d, 00000011b		
+
+		pinsrd		xmm3, edx, 00000000b
+		pinsrd		xmm3, ebp, 00000001b
+		pinsrd		xmm3, ebx, 00000010b
+		pinsrd		xmm3, ecx, 00000011b
+
+		call idct16
+
+		insertps xmm10, xmm0, 00000000b
+		insertps xmm11, xmm0, 01000000b
+		insertps xmm12, xmm0, 10000000b
+		insertps xmm13, xmm0, 11000000b
+
+		insertps xmm0, xmm10, 01000000b
+		insertps xmm0, xmm11, 01010000b
+		insertps xmm0, xmm12, 01100000b
+		insertps xmm0, xmm13, 01110000b
+
+		insertps xmm14, xmm1, 00000000b
+		insertps xmm15, xmm1, 01000000b
+
+		insertps xmm1, xmm14, 01000000b
+		insertps xmm1, xmm15, 01010000b
+
+
+		shr r10, 32
+		mov r8, r10
+		extractps r10d, xmm1, 00000010b
+		pinsrd xmm1, r8d, 00000010b
+
+		shr r11, 32
+		mov r8, r11
+		extractps r11d, xmm1, 00000011b
+		pinsrd xmm1, r8d, 00000011b
+
+		shr r12, 32
+		mov r8, r12
+		extractps r12d, xmm2, 00000000b
+		pinsrd xmm2, r8d, 00000000b
+
+		shr r13, 32
+		mov r8, r13
+		extractps r13d, xmm2, 00000001b
+		pinsrd xmm2, r8d, 00000001b
+
+		shr r14, 32
+		mov r8, r14
+		extractps r14d, xmm2, 00000010b
+		pinsrd xmm2, r8d, 00000010b
+
+		shr r15, 32
+		mov r8, r15
+		extractps r15d, xmm2, 00000011b
+		pinsrd xmm2, r8d, 00000011b
+
+
+		shr rdx, 32
+		mov r8, rdx
+		extractps edx, xmm3, 00000000b
+		pinsrd xmm3, r8d, 00000000b
+
+		shr rbp, 32
+		mov r8, rbp
+		extractps ebp, xmm3, 00000001b
+		pinsrd xmm3, r8d, 00000001b
+
+		shr rbx, 32
+		mov r8, rbx
+		extractps ebx, xmm3, 00000010b
+		pinsrd xmm3, r8d, 00000010b
+
+		shr rcx, 32
+		mov r8, rcx
+		extractps ecx, xmm3, 00000011b
+		pinsrd xmm3, r8d, 00000011b
+
+		call idct16
+
+		insertps xmm10, xmm0, 00010000b
+		insertps xmm11, xmm0, 01010000b
+		insertps xmm12, xmm0, 10010000b
+		insertps xmm13, xmm0, 11010000b
+
+		insertps xmm0, xmm10, 10000000b
+		insertps xmm0, xmm11, 10010000b
+		insertps xmm0, xmm12, 10100000b
+		insertps xmm0, xmm13, 10110000b
+
+		insertps xmm14, xmm1, 00010000b
+		insertps xmm15, xmm1, 01010000b
+
+		insertps xmm1, xmm14, 10000000b
+		insertps xmm1, xmm15, 10010000b
+
+		xor r8, r8
+		extractps r8d, xmm1, 00000010b
+		shl r8, 32
+		xor r10, r8
+
+		xor r8, r8
+		extractps r8d, xmm1, 00000011b
+		shl r8, 32
+		xor r11, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000000b
+		shl r8, 32
+		xor r12, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000001b
+		shl r8, 32
+		xor r13, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000010b
+		shl r8, 32
+		xor r14, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000011b
+		shl r8, 32
+		xor r15, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000000b
+		shl r8, 32
+		xor rdx, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000001b
+		shl r8, 32
+		xor rbp, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000010b
+		shl r8, 32
+		xor rbx, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000011b
+		shl r8, 32
+		xor rcx, r8
+
+		mov [rsi + rax + 16 * 4 * 6], r10
+		mov [rsi + rax + 16 * 4 * 7], r11
+		mov [rsi + rax + 16 * 4 * 8], r12
+		mov [rsi + rax + 16 * 4 * 9], r13
+		mov [rsi + rax + 16 * 4 * 10], r14
+		mov [rsi + rax + 16 * 4 * 11], r15
+		mov [rsi + rax + 16 * 4 * 12], rdx
+		mov [rsi + rax + 16 * 4 * 13], rbp
+		mov [rsi + rax + 16 * 4 * 14], rbx
+		mov [rsi + rax + 16 * 4 * 15], rcx
+
+		add rax, 8
+
+		mov r10, [rdi + rax + 16 * 4 * 6]
+		mov r11, [rdi + rax + 16 * 4 * 7]
+		mov r12, [rdi + rax + 16 * 4 * 8]
+		mov r13, [rdi + rax + 16 * 4 * 9]
+		mov r14, [rdi + rax + 16 * 4 * 10]
+		mov r15, [rdi + rax + 16 * 4 * 11]
+		mov rdx, [rdi + rax + 16 * 4 * 12]
+		mov rbp, [rdi + rax + 16 * 4 * 13]
+		mov rbx, [rdi + rax + 16 * 4 * 14]
+		mov rcx, [rdi + rax + 16 * 4 * 15]
+
+		pinsrd		xmm1, r10d, 00000010b
+		pinsrd		xmm1, r11d, 00000011b
+
+		pinsrd		xmm2, r12d, 00000000b
+		pinsrd		xmm2, r13d, 00000001b
+		pinsrd		xmm2, r14d, 00000010b
+		pinsrd		xmm2, r15d, 00000011b		
+
+		pinsrd		xmm3, edx, 00000000b
+		pinsrd		xmm3, ebp, 00000001b
+		pinsrd		xmm3, ebx, 00000010b
+		pinsrd		xmm3, ecx, 00000011b
+
+		call idct16
+
+		insertps xmm10, xmm0, 00100000b
+		insertps xmm11, xmm0, 01100000b
+		insertps xmm12, xmm0, 10100000b
+		insertps xmm13, xmm0, 11100000b
+
+		insertps xmm0, xmm10, 11000000b
+		insertps xmm0, xmm11, 11010000b
+		insertps xmm0, xmm12, 11100000b
+		insertps xmm0, xmm13, 11110000b
+
+		insertps xmm14, xmm1, 00100000b
+		insertps xmm15, xmm1, 01100000b
+
+		insertps xmm1, xmm14, 11000000b
+		insertps xmm1, xmm15, 11010000b
+
+
+		shr r10, 32
+		mov r8, r10
+		extractps r10d, xmm1, 00000010b
+		pinsrd xmm1, r8d, 00000010b
+
+		shr r11, 32
+		mov r8, r11
+		extractps r11d, xmm1, 00000011b
+		pinsrd xmm1, r8d, 00000011b
+
+		shr r12, 32
+		mov r8, r12
+		extractps r12d, xmm2, 00000000b
+		pinsrd xmm2, r8d, 00000000b
+
+		shr r13, 32
+		mov r8, r13
+		extractps r13d, xmm2, 00000001b
+		pinsrd xmm2, r8d, 00000001b
+
+		shr r14, 32
+		mov r8, r14
+		extractps r14d, xmm2, 00000010b
+		pinsrd xmm2, r8d, 00000010b
+
+		shr r15, 32
+		mov r8, r15
+		extractps r15d, xmm2, 00000011b
+		pinsrd xmm2, r8d, 00000011b
+
+
+		shr rdx, 32
+		mov r8, rdx
+		extractps edx, xmm3, 00000000b
+		pinsrd xmm3, r8d, 00000000b
+
+		shr rbp, 32
+		mov r8, rbp
+		extractps ebp, xmm3, 00000001b
+		pinsrd xmm3, r8d, 00000001b
+
+		shr rbx, 32
+		mov r8, rbx
+		extractps ebx, xmm3, 00000010b
+		pinsrd xmm3, r8d, 00000010b
+
+		shr rcx, 32
+		mov r8, rcx
+		extractps ecx, xmm3, 00000011b
+		pinsrd xmm3, r8d, 00000011b
+
+		call idct16
+
+		insertps xmm10, xmm0, 00110000b
+		insertps xmm11, xmm0, 01110000b
+		insertps xmm12, xmm0, 10110000b
+		insertps xmm13, xmm0, 11110000b
+
+		insertps xmm14, xmm1, 00110000b
+		insertps xmm15, xmm1, 01110000b
+
+		xor r8, r8
+		extractps r8d, xmm1, 00000010b
+		shl r8, 32
+		xor r10, r8
+
+		xor r8, r8
+		extractps r8d, xmm1, 00000011b
+		shl r8, 32
+		xor r11, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000000b
+		shl r8, 32
+		xor r12, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000001b
+		shl r8, 32
+		xor r13, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000010b
+		shl r8, 32
+		xor r14, r8
+
+		xor r8, r8
+		extractps r8d, xmm2, 00000011b
+		shl r8, 32
+		xor r15, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000000b
+		shl r8, 32
+		xor rdx, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000001b
+		shl r8, 32
+		xor rbp, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000010b
+		shl r8, 32
+		xor rbx, r8
+
+		xor r8, r8
+		extractps r8d, xmm3, 00000011b
+		shl r8, 32
+		xor rcx, r8
+
+		mov [rsi + rax + 16 * 4 * 6], r10
+		mov [rsi + rax + 16 * 4 * 7], r11
+		mov [rsi + rax + 16 * 4 * 8], r12
+		mov [rsi + rax + 16 * 4 * 9], r13
+		mov [rsi + rax + 16 * 4 * 10], r14
+		mov [rsi + rax + 16 * 4 * 11], r15
+		mov [rsi + rax + 16 * 4 * 12], rdx
+		mov [rsi + rax + 16 * 4 * 13], rbp
+		mov [rsi + rax + 16 * 4 * 14], rbx
+		mov [rsi + rax + 16 * 4 * 15], rcx
+
+		sub rax, 8
+
+		movaps [rsi + rax + 16 * 4 * 0], xmm10
+		movaps [rsi + rax + 16 * 4 * 1], xmm11
+		movaps [rsi + rax + 16 * 4 * 2], xmm12
+		movaps [rsi + rax + 16 * 4 * 3], xmm13
+		movaps [rsi + rax + 16 * 4 * 4], xmm14
+		movaps [rsi + rax + 16 * 4 * 5], xmm15
+
+		add rax, 16
+
+		cmp rax, 16*4
+		jne loop_column1
+
+
+	xor rax, rax
+	loop_row1:
+		movaps xmm0, [rsi + rax + 4*4*0]
+		movaps xmm1, [rsi + rax + 4*4*1]
+		movaps xmm2, [rsi + rax + 4*4*2]
+		movaps xmm3, [rsi + rax + 4*4*3]
+		call idct16
+		movaps [rsi + rax + 4*4*0], xmm0
+		movaps [rsi + rax + 4*4*1], xmm1
+		movaps [rsi + rax + 4*4*2], xmm2
+		movaps [rsi + rax + 4*4*3], xmm3
+		add rax, 16*4
+		cmp rax, 256*4
+		jne loop_row1
+
+	;---------------------------------------------------------------------------------------------------------------------------------
+	movaps xmm6, [rsp + 16*0]
+	movaps xmm7, [rsp + 16*1]
+	movaps xmm8, [rsp + 16*2]
+	movaps xmm9, [rsp + 16*3]
+	movaps xmm10, [rsp + 16*4]
+	movaps xmm11, [rsp + 16*5]
+	movaps xmm12, [rsp + 16*6]
+	movaps xmm13, [rsp + 16*7]
+	movaps xmm14, [rsp + 16*8]
+	movaps xmm15, [rsp + 16*9]
+	add rsp, 16*10
+
+	pop r15
+	pop r14
+	pop r13
+	pop r12
+	pop rdi
+	pop rsi
+	pop rbp
+	pop rbx
+
+	add rsp, 8
+
+	ret
+
+
+;idct16 for xmm0..xmm3 numbers
+idct16:
+	divps xmm0, [divtwo]
+	shufps xmm0, xmm0, 11011000b
+	shufps xmm1, xmm1, 10001101b
+	movaps xmm4, xmm0
+	shufps xmm0, xmm1, 11100100b
+	movaps xmm5, xmm1
+
+	shufps xmm2, xmm2, 11011000b
+	shufps xmm3, xmm3, 10001101b
+
+	movaps xmm1, xmm2
+
+	shufps xmm1, xmm3, 11100100b
+
+	jmp idct8_1
+	idct8_1_end:
+
+	shufps xmm5, xmm4, 11100100b
+	movaps xmm4, xmm5
+
+	shufps xmm4, xmm4, 00111010b
+	shufps xmm5, xmm5, 01001110b
+	addps xmm4, xmm5
+	divps xmm4, [divtwo]
+
+	shufps xmm3, xmm2, 11100100b
+	movaps xmm2, xmm3
+
+	shufps xmm2, xmm2, 00111010b
+	shufps xmm3, xmm3, 01001110b
+	addps xmm2, xmm3		
+	divps xmm2, [divtwo]
+
+	xorps xmm6, xmm6
+	unpckhps xmm6, xmm5
+	shufps xmm6, xmm6, 00000011b
+	addps xmm2, xmm6
+
+	movaps xmm3, xmm4
+
+	movaps xmm4, xmm0
+	movaps xmm5, xmm1
+
+	movaps xmm0, xmm3
+	movaps xmm1, xmm2
+
+	jmp idct8_2
+	idct8_2_end:
+
+	divps xmm0, [matrix16]
+	divps xmm1, [matrix16 + 16]
+
+	movaps xmm6, xmm4
+	addps xmm6, xmm0
+
+	movaps xmm7, xmm5
+	addps xmm7, xmm1
+
+	movaps xmm9, xmm4
+	subps xmm9, xmm0
+
+	movaps xmm8, xmm5
+	subps xmm8, xmm1
+
+	shufps xmm9, xmm9, 00011011b
+	shufps xmm8, xmm8, 00011011b
+
+	movaps xmm0, xmm6
+	movaps xmm1, xmm7
+	movaps xmm2, xmm8
+	movaps xmm3, xmm9
+
+	mulps xmm0, [imatrix]
+	mulps xmm1, [imatrix]
+	mulps xmm2, [imatrix]
+	mulps xmm3, [imatrix]
+
+	ret
+
+;idct8 for xmm0..xmm1 numbers (can't use xmm2, xmm3, xmm4, xmm5)
+idct8_1:
+	shufps xmm0, xmm0, 11011000b
+	shufps xmm1, xmm1, 10001101b
+	movaps xmm6, xmm0
+
+	shufps xmm0, xmm1, 11100100b
+
+	jmp idct4_1
+	idct4_1_end:
+
+	shufps xmm1, xmm6, 11100100b
+
+	movaps xmm6, xmm0
+	movaps xmm0, xmm1
+
+	shufps xmm0, xmm0, 00111010b
+	shufps xmm1, xmm1, 01001110b
+
+	addps xmm0, xmm1
+	divps xmm0, [divtwo]
+	
+	jmp idct4_2
+	idct4_2_end:
+
+	divps xmm0, [matrix8]
+
+	movaps xmm8, xmm6
+	addps xmm8, xmm0
+
+	movaps xmm7, xmm6
+	subps xmm7, xmm0
+
+	shufps xmm7, xmm7, 00011011b
+
+	movaps xmm0, xmm8
+	movaps xmm1, xmm7
+	jmp idct8_1_end
+idct8_2:
+	shufps xmm0, xmm0, 11011000b
+	shufps xmm1, xmm1, 10001101b
+	movaps xmm6, xmm0
+
+	shufps xmm0, xmm1, 11100100b
+
+	jmp idct4_3
+	idct4_3_end:
+
+	shufps xmm1, xmm6, 11100100b
+
+	movaps xmm6, xmm0
+	movaps xmm0, xmm1
+
+	shufps xmm0, xmm0, 00111010b
+	shufps xmm1, xmm1, 01001110b
+
+	addps xmm0, xmm1
+	divps xmm0, [divtwo]
+	
+	jmp idct4_4
+	idct4_4_end:
+
+	divps xmm0, [matrix8]
+
+	movaps xmm8, xmm6
+	addps xmm8, xmm0
+
+	movaps xmm7, xmm6
+	subps xmm7, xmm0
+
+	shufps xmm7, xmm7, 00011011b
+
+	movaps xmm0, xmm8
+	movaps xmm1, xmm7
+	jmp idct8_2_end
+
+;idct4 for xmm0 number (can't use xmm1, xmm2, xmm3, xmm4, xmm5, xmm6)
+idct4_1:
+	xorps xmm7, xmm7
+	unpckhps xmm7, xmm0
+	shufps xmm7, xmm7, 11000000b
+
+	shufps xmm0, xmm0, 01011000b
+	addps xmm0, xmm7
+
+	;idct2----------------------
+	divps xmm0, [matrix2]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 10100000b
+	shufps xmm7, xmm7, 11110101b
+	mulps xmm7, [mulmatrix2]
+	addps xmm0, xmm7	
+	;---------------------------
+
+	divps xmm0, [matrix4]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 00010100b
+	shufps xmm7, xmm7, 10111110b
+	mulps xmm7, [mulmatrix]
+	addps xmm0, xmm7
+	jmp idct4_1_end
+idct4_2:
+	xorps xmm7, xmm7
+	unpckhps xmm7, xmm0
+	shufps xmm7, xmm7, 11000000b
+
+	shufps xmm0, xmm0, 01011000b
+	addps xmm0, xmm7
+
+	;idct2----------------------
+	divps xmm0, [matrix2]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 10100000b
+	shufps xmm7, xmm7, 11110101b
+	mulps xmm7, [mulmatrix2]
+	addps xmm0, xmm7	
+	;---------------------------
+
+	divps xmm0, [matrix4]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 00010100b
+	shufps xmm7, xmm7, 10111110b
+	mulps xmm7, [mulmatrix]
+	addps xmm0, xmm7
+	jmp idct4_2_end
+idct4_3:
+	xorps xmm7, xmm7
+	unpckhps xmm7, xmm0
+	shufps xmm7, xmm7, 11000000b
+
+	shufps xmm0, xmm0, 01011000b
+	addps xmm0, xmm7
+
+	;idct2----------------------
+	divps xmm0, [matrix2]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 10100000b
+	shufps xmm7, xmm7, 11110101b
+	mulps xmm7, [mulmatrix2]
+	addps xmm0, xmm7	
+	;---------------------------
+
+	divps xmm0, [matrix4]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 00010100b
+	shufps xmm7, xmm7, 10111110b
+	mulps xmm7, [mulmatrix]
+	addps xmm0, xmm7
+	jmp idct4_3_end
+idct4_4:
+	xorps xmm7, xmm7
+	unpckhps xmm7, xmm0
+	shufps xmm7, xmm7, 11000000b
+
+	shufps xmm0, xmm0, 01011000b
+	addps xmm0, xmm7
+
+	;idct2----------------------
+	divps xmm0, [matrix2]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 10100000b
+	shufps xmm7, xmm7, 11110101b
+	mulps xmm7, [mulmatrix2]
+	addps xmm0, xmm7	
+	;---------------------------
+
+	divps xmm0, [matrix4]
+	movaps xmm7, xmm0
+	shufps xmm0, xmm0, 00010100b
+	shufps xmm7, xmm7, 10111110b
+	mulps xmm7, [mulmatrix]
+	addps xmm0, xmm7
+	jmp idct4_4_end
+
 align 16 section .rdata
     matrix16: dd 1.99037, 1.91388, 1.76384, 1.54602, 1.26879, 0.942793, 0.580569, 0.196034 
     matrix8: dd 1.96157, 1.66294, 1.11114, 0.390181 
@@ -756,5 +1458,7 @@ align 16 section .rdata
     matrix2: dd 1.0, 1.41421, 1.0, 1.41421 
     mulmatrix: dd 1.0, 1.0, -1.0, -1.0
     mulmatrix2: dd 1.0, -1.0, 1.0, -1.0
-    divmatrix: dd 16.0, 16.0, 16.0, 16.0
+    fmatrix: dd 16.0, 16.0, 16.0, 16.0
+    imatrix: dd 2.0, 2.0, 2.0, 2.0
+    divtwo: dd 2.0, 1.0, 1.0, 1.0
 
